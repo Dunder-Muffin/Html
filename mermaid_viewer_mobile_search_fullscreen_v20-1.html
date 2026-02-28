@@ -1023,17 +1023,19 @@ S_GEN3 --- P072
 S_GEN3 --- P134
 S_GEN3 --- P097
 S_GEN3 --- P098
-S_GEN4 --- U007
-S_GEN4 --- U020
 S_GEN4 --- U022
+S_GEN4 --- U020
+S_GEN4 --- P073
 S_GEN3 --> S_GEN4
 
 %% якорь поколений 5-7 "скрытый" - удерживает GEN6 и GEN7 под GEN5
-S_GEN5 --- P002
-S_GEN5 --- P018
-S_GEN6 --- U001
+%% выбираем более центральные узлы, чтобы GEN4-5-6-7 не шли "лесенкой"
+S_GEN5 --- U012
+S_GEN5 --- U018
+S_GEN6 --- U009
 S_GEN6 --- U019
 S_GEN7 --- U021
+S_GEN7 --- U004
 S_GEN5 --> S_GEN6
 S_GEN6 --> S_GEN7
 
@@ -1951,9 +1953,12 @@ if (desiredZoomFactor !== 1.0) {
         .replace(/"rankSpacing"\s*:\s*\d+/g, '"rankSpacing": 115')
         .replace(/"diagramPadding"\s*:\s*\d+/g, '"diagramPadding": 6');
 
-      // Stronger generation anchoring: keep GEN7 closer to GEN6 on auto-layout
-      if (!/S_GEN6\s*---\s*U021/.test(source)) source += "\nS_GEN6 --- U021\n";
-      if (!/S_GEN6\s*---\s*U004/.test(source)) source += "\nS_GEN6 --- U004\n";
+      // Reinforce central anchor column so GEN4-5-6-7 stay vertically stacked
+      if (!/S_GEN4\s*---\s*U022/.test(source)) source += "\nS_GEN4 --- U022\n";
+      if (!/S_GEN5\s*---\s*U012/.test(source)) source += "\nS_GEN5 --- U012\n";
+      if (!/S_GEN6\s*---\s*U009/.test(source)) source += "\nS_GEN6 --- U009\n";
+      if (!/S_GEN7\s*---\s*U021/.test(source)) source += "\nS_GEN7 --- U021\n";
+      if (!/S_GEN7\s*---\s*U004/.test(source)) source += "\nS_GEN7 --- U004\n";
 
       const extracted = extractLinkStyles(source);
       linkStyles = extracted.styles;
