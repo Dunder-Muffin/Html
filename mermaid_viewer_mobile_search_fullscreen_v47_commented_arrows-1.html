@@ -2375,7 +2375,9 @@ function getTitleText(g) {
 
     function extractGenishKey(s) {
       if (!s) return null;
-      const m = String(s).match(/GEN\d(?:_[A-Za-z0-9]+)*/);
+      // Keep the pattern in RegExp(...) form to avoid a literal "*/" sequence,
+      // which can confuse tools that naively scan block-comment boundaries.
+      const m = String(s).match(new RegExp("GEN\\d(?:_[A-Za-z0-9]+)*"));
       return m ? m[0] : null;
     }
 
