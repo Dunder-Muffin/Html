@@ -3956,8 +3956,31 @@ if (desiredZoomFactor !== 1.0) {
       }
     }
 
-    
+    /*
+      Edge overlay pipeline (важно для стабильности linkStyle индексов):
+      1) extractEdgeOrder(src) извлекает ребра строго в порядке исходного Mermaid-текста.
+      2) Этот порядок используется как источник истины для linkStyle N (индекс -> DOM path).
+      3) rewriteEdgeOrderForOverlay(edgeOrder) не «перенумеровывает» базу:
+         - часть исходных ребер помечается _forceHidden,
+         - но индексы существующих ребер сохраняются.
+      4) Любые синтетические ребра добавляются только в хвост: base.concat(extra).
+      5) applyLinkStylesToSvg(...) сначала маппит стили по ключу from|to|occ,
+         затем использует fallback по DOM-порядку для совместимости.
 
+      Таблица поведения overlay-логики:
+      | Тип ребра / кейс      | Что скрываем (_forceHidden)                   | Что дорисовываем (extra)                    |
+      |-----------------------|-----------------------------------------------|---------------------------------------------|
+      | Обычная семья         | Ничего (базовые ребра остаются видимыми)      | Ничего                                      |
+      | single-parent union   | P->U (родитель), U->P (дети этого union)      | Прямые P->P (родитель->ребенок), kind=spc  |
+      | auto siblings         | Зависит от конкретного rewrite auto-siblings  | Синтетические sibling-связи в конец массива |
+
+      Как расширять логику новым типом ребра (kind):
+      - Добавить создание нового synthetic edge (extra.push) в rewriteEdgeOrderForOverlay.
+      - Явно выбрать kind (например "xyz") и задать устойчивый occ при необходимости.
+      - Обновить applyLinkStylesToSvg, если для нового kind нужен спец-mapping/фильтрация.
+      - Проверить, что базовые ребра скрываются только через _forceHidden, без изменения индексов.
+      - Убедиться, что новые ребра остаются в хвосте через base.concat(extra).
+    */
     function rewriteEdgeOrderForOverlay(edgeOrder) {
       if (!edgeOrder || !edgeOrder.length) return edgeOrder || [];
 
