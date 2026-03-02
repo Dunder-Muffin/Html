@@ -4056,6 +4056,50 @@ if (desiredZoomFactor !== 1.0) {
 
       return { requested: swaps.length, done: done.length };
     }
+    /**
+     * Contract:
+     * - Работает только с исходным Mermaid-текстом (`src`) и возвращает НОВЫЙ Mermaid-текст.
+     * - Нормализация выполняется до рендера: изменения касаются только размещения строк узлов
+     *   по `subgraph GENx`, чтобы повлиять на итоговый layout ELK.
+     *
+     * Inputs:
+     * - `src: string` — исходный Mermaid source.
+     * - Пары для переноса определяются исключительно по ребрам с меткой `супруги`
+     *   (анализируются уже распарсенные edge-объекты и их `label`).
+     *
+     * Outputs:
+     * - Возвращает строку Mermaid source с возможными переносами узлов между `subgraph GENx`.
+     * - Для пары супругов целевое поколение выбирается по текущему правилу «более раннего/целевого»
+     *   (см. логику `preferGen` ниже); именно это решение затем влияет на ELK-раскладку,
+     *   т.к. узел физически оказывается в другом GEN-блоке.
+     *
+     * Side effects:
+     * - Внешних побочных эффектов нет: DOM/глобальное состояние не меняются,
+     *   функция только формирует и возвращает новый текст.
+     *
+     * Limitations:
+     * - "Безопасными для переписывания" считаются строки, которые `parseGenerationMembership`
+     *   идентифицирует как объявления узлов внутри конкретного `subgraph GENx`.
+     * - Экзотические/нестандартные варианты Mermaid-синтаксиса могут не покрываться:
+     *   многострочные объявления узла, нетипичные inline-комбинации, сильно кастомные конструкции
+     *   subgraph/узел, которые не попадают в ожидаемые парсеры membership/edges.
+     * - Логика должна оставаться идемпотентной: повторный запуск на уже нормализованном тексте
+     *   не должен снова и снова переставлять тот же блок.
+     *
+     * Мини-пример (до/после):
+     * До:
+     *   subgraph GEN2
+     *     IVAN[Иван]
+     *   subgraph GEN3
+     *     OLGA[Ольга]
+     *   IVAN -->|супруги| OLGA
+     *
+     * После:
+     *   subgraph GEN2
+     *     IVAN[Иван]
+     *     OLGA[Ольга]
+     *   IVAN -->|супруги| OLGA
+     */
 function normalizeSourceForCoupleGenerations(src) {
       // Ensures spouses end up in the same generation block in the Mermaid SOURCE, not only in post-layout logic.
       // This prevents cases where a husband/wife is visually stuck inside a different GEN cluster.
