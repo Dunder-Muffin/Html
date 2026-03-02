@@ -3331,8 +3331,40 @@ function getNodeAnchors(nodeEl) {
         const aa = getNodeAnchors(a);
         const bb = getNodeAnchors(b);
 
-        
-// Choose anchors (ports) + orthogonal route (avoid acute entry angles)
+        /*
+          ROUTING NOTES (поисковые якоря: routeOrthoPoints, polyMidAngle, drawOverlayEdges/buildOverlayEdges)
+
+          1) Правила выбора портов по типам связей:
+             - отец/мать: вертикальный выход/вход (bottom->top или top->bottom), чтобы стрелка подходила к карточке
+               «сверху/снизу», а не в бок.
+             - U->P (isChild): тот же приоритет вертикали; когда union выше ребёнка, идём bottom->top.
+             - сиблинги и супруги: горизонтальные порты (right->left или left->right), чтобы связь читалась как связь
+               в одной генерации.
+             - default: предпочитаем вертикаль, если |dy| сопоставим с |dx|, иначе горизонталь.
+
+          2) Почему Manhattan (ортогональный) маршрут:
+             - routeOrthoPoints строит ломаную с прямыми сегментами и гарантированными «stub»-участками у узлов.
+             - Это стабилизирует углы входа arrowhead и меток при lock поколений: меньше «случайных» касательных,
+               чем у кривых, где угол в точке может меняться заметнее при мелких сдвигах.
+
+          3) Роль BASE_STUB и безопасная настройка:
+             - BASE_STUB задаёт длину начального/конечного прямого сегмента перед первым/последним поворотом.
+             - Увеличение BASE_STUB: чище угол входа, но выше риск лишних пересечений и удлинения путей.
+             - Уменьшение BASE_STUB: короче линии, но чаще «прилипание» поворота к узлу и визуальный шум.
+             - Безопасно менять шагом 8..16 и проверять плотные участки (особенно параллельные parent/child рёбра).
+
+          4) Направление стрелки (marker-start / marker-end):
+             - Базово берётся из conn: символ '<' включает marker-start, символ '>' включает marker-end.
+             - Затем применяются semantic overrides:
+               сиблинги => двунаправленно, отец/мать => только marker-start, child(U->P) => только marker-end.
+
+          5) Troubleshooting:
+             - Стрелка «втыкается сбоку»: проверить ветку выбора portFrom/portTo и dy/dx, затем routeOrthoPoints.
+             - Подпись смещается после lock поколений: проверить midpoint-логику polyMidAngle/pathMidAngle и что
+               buildOverlayEdges (поиск: drawOverlayEdges) действительно пересобрал overlay после lock.
+        */
+
+        // Choose anchors (ports) + orthogonal route (avoid acute entry angles)
         const dy = bb.center.y - aa.center.y;
         const dx = bb.center.x - aa.center.x;
 
